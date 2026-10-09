@@ -393,7 +393,7 @@ const THEMES = [
 const themeOf = id => THEMES.find(t => t.id === id) || THEMES[0];
 
 const S = { screen: 'home', round: 1, speaker: 0, score: [0, 0], slow: false, note: '', theme: 'libre', suggest: null };
-const clips = { a: null, b: null, f: null };
+const clips = { a: null, b: null };
 const rec = { on: false, busy: false, target: null, mic: null, chunks: null, level: 0, t0: 0, raf: 0 };
 const play = { key: null, src: null, ctx: null, t0: 0, dur: 0, raf: 0 };
 
@@ -678,7 +678,7 @@ function recLoop() {
 async function toggleRec() {
   if (rec.busy) return;
   if (rec.on) return finishRec();
-  const target = { rec1: 'a', imitate: 'b', free: 'f' }[S.screen];
+  const target = { rec1: 'a', imitate: 'b' }[S.screen];
   if (!target) return;
 
   stopPlay();
@@ -801,7 +801,6 @@ const screens = {
       <div class="actions">
         <button class="btn btn--main" data-act="start">Jugar libre</button>
         <button class="btn" data-act="pick">Jugar con temática</button>
-        <button class="btn" data-act="free">Modo libre</button>
       </div>`;
   },
   theme() {
@@ -884,19 +883,6 @@ const screens = {
           <button class="btn" data-act="miss">No</button>
         </div>
       </div>`;
-  },
-  free() {
-    return `
-      <div class="head">
-        <p class="eyebrow">Modo libre</p>
-        <h1>Graba y dale la vuelta</h1>
-        ${clips.f ? '' : '<p class="hint">Graba lo que quieras y escúchalo normal o al revés.</p>'}
-      </div>
-      ${notice()}
-      ${clips.f ? `<div class="tapes">${tape('f.fwd', 'Normal')}${tape('f.rev', 'Al revés')}</div>
-        ${slowChip()}
-        <div class="actions"><button class="btn btn--main" data-act="redo">Grabar otra</button></div>`
-      : recZone()}`;
   }
 };
 
@@ -930,11 +916,10 @@ const actions = {
   pick: () => go('theme'),
   pickTheme: el => { S.theme = el.dataset.theme; clips.a = clips.b = null; S.suggest = null; go('rec1'); },
   suggest: () => { S.suggest = pickWord(); render(); },
-  free: () => { clips.f = null; go('free'); },
   reset: () => { S.score = [0, 0]; S.round = 1; S.speaker = 0; saveScore(); render(); },
   rec: () => toggleRec(),
   redo: () => {
-    const target = { rec1: 'a', imitate: 'b', free: 'f' }[S.screen];
+    const target = { rec1: 'a', imitate: 'b' }[S.screen];
     stopPlay();
     clips[target] = null;
     render();
