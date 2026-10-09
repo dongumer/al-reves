@@ -1,0 +1,904 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Al Revés</title>
+<meta name="description" content="Graba una palabra, escúchala al revés, imítala y adivina cuál era.">
+<meta name="theme-color" content="#1a1410">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Al Revés">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&display=swap">
+<style>
+/* Layout: one phone screen, like a toy tape recorder. A black handle strip on top
+   holds the score, the instruction sits in the middle, the big key lives in the
+   thumb zone. Blue always means "al revés". Red always means "grabando". */
+:root {
+  --ground: #ffd23f;
+  --ink: #1a1410;
+  --paper: #fff4cc;
+  --muted: #6b5a2e;
+  --rec: #e5362c;
+  --on-rec: #ffffff;
+  --rev: #2743d6;
+  --shadow: #b07c00;
+  --bar: #1a1410;
+  --on-bar: #ffd23f;
+  --display: "Bagel Fat One", ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --body: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #16120d;
+    --ink: #ffe9a6;
+    --paper: #262019;
+    --muted: #b3a16a;
+    --rec: #ff5a4f;
+    --on-rec: #1a0503;
+    --rev: #8fa2ff;
+    --shadow: #4a3c12;
+    --bar: #000000;
+    --on-bar: #ffd23f;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html {
+  height: 100%;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+body {
+  margin: 0;
+  height: 100%;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--ground);
+  color: var(--ink);
+  font: 500 17px/1.4 var(--body);
+}
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+:focus-visible { outline: 3px solid var(--rev); outline-offset: 3px; }
+
+/* ---- handle strip ---- */
+.bar {
+  background: var(--bar);
+  color: var(--on-bar);
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 16px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.brand {
+  font-family: var(--display);
+  font-size: 20px;
+  letter-spacing: .02em;
+  background: none;
+  border: 0;
+  padding: 8px 0;
+  min-height: 44px;
+}
+.mirror { display: inline-block; transform: scaleX(-1); }
+.score {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.score b {
+  min-width: 30px;
+  padding: 2px 8px;
+  border-radius: 7px;
+  background: var(--on-bar);
+  color: var(--bar);
+  font-size: 16px;
+  text-align: center;
+}
+
+/* ---- screen ---- */
+#app {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 520px;
+  margin-inline: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 20px calc(22px + env(safe-area-inset-bottom, 0px));
+}
+.steps { display: flex; gap: 6px; list-style: none; margin: 0; padding: 0; }
+.steps li { flex: 1; height: 6px; border-radius: 3px; background: var(--ink); opacity: .2; }
+.steps li.is-on { opacity: 1; }
+.eyebrow {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(30px, 9vw, 42px);
+  line-height: 1.04;
+  text-wrap: balance;
+}
+.hint { margin: 0; max-width: 36ch; color: var(--muted); font-size: 16px; }
+.head { display: flex; flex-direction: column; gap: 8px; }
+.notice {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--ground);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+/* ---- home ---- */
+.hero {
+  margin: 4px 0 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(64px, 23vw, 124px);
+  line-height: .98;
+}
+.hero span { display: block; width: max-content; max-width: 100%; }
+.hero .mirror { color: var(--rev); }
+.how { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; counter-reset: n; }
+.how li { display: grid; grid-template-columns: 30px 1fr; gap: 12px; align-items: start; }
+.how li::before {
+  counter-increment: n;
+  content: counter(n);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  color: var(--ground);
+  font-family: var(--display);
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* ---- keys ---- */
+.actions { margin-top: auto; display: flex; flex-direction: column; gap: 14px; padding-top: 4px; }
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 58px;
+  padding: 12px 18px;
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 18px;
+  text-align: center;
+  box-shadow: 0 5px 0 var(--shadow);
+  transition: transform 90ms ease-out, box-shadow 90ms ease-out;
+}
+.btn:active { transform: translateY(5px); box-shadow: 0 0 0 var(--shadow); }
+.btn.btn--main { background: var(--ink); color: var(--ground); }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.link {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 8px 0;
+  background: none;
+  border: 0;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---- record key ---- */
+.rec-zone {
+  margin-block: auto;
+  padding-block: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+.rec {
+  position: relative;
+  width: 136px;
+  height: 136px;
+  padding: 0;
+  border: 5px solid var(--ink);
+  border-radius: 50%;
+  background: var(--rec);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 0 var(--shadow);
+  transition: transform 90ms ease-out, box-shadow 90ms ease-out;
+}
+.rec:active { transform: translateY(8px); box-shadow: 0 0 0 var(--shadow); }
+.rec::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 6px solid var(--rec);
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(calc(1.08 + var(--lvl, 0) * .5));
+  pointer-events: none;
+}
+.rec.is-on::before { opacity: .5; }
+.rec i {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--on-rec);
+  transition: border-radius 140ms ease-out, transform 140ms ease-out;
+}
+.rec.is-on i { border-radius: 10px; transform: scale(.82); }
+.rec.is-busy { opacity: .55; }
+.rec-label {
+  margin: 0;
+  font-weight: 800;
+  font-size: 17px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- tape (a playable recording) ---- */
+.tapes { display: grid; gap: 14px; }
+.tape {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px 10px 10px;
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  box-shadow: 0 5px 0 var(--shadow);
+  transition: transform 90ms ease-out, box-shadow 90ms ease-out;
+}
+.tape:active { transform: translateY(5px); box-shadow: 0 0 0 var(--shadow); }
+.tape.is-rev { border-color: var(--rev); color: var(--rev); }
+.tape-key {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: currentColor;
+  display: grid;
+  place-items: center;
+}
+.tape-key::after {
+  content: "";
+  margin-left: 5px;
+  border-left: 17px solid var(--paper);
+  border-block: 11px solid transparent;
+}
+.tape.is-playing .tape-key::after {
+  margin: 0;
+  width: 17px;
+  height: 17px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--paper);
+}
+.tape-name { display: flex; justify-content: space-between; gap: 8px; font-weight: 800; font-size: 15px; }
+.tape-name small { font-weight: 700; font-size: 13px; opacity: .75; font-variant-numeric: tabular-nums; }
+.tape canvas { display: block; width: 100%; height: 38px; margin-top: 4px; }
+.group { display: grid; gap: 12px; }
+
+.chip {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 16px 8px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 15px;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.chip input { width: 20px; height: 20px; margin: 0; accent-color: var(--ink); }
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover, .tape:hover, .rec:hover { filter: brightness(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn, .tape, .rec, .rec i { transition: none; }
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <button class="brand" data-act="home" aria-label="Al Revés, volver al inicio">AL <span class="mirror">REVÉS</span></button>
+  <div class="score" id="score" aria-label="Marcador"></div>
+</header>
+<main id="app"></main>
+
+<script>
+'use strict';
+
+const MAX_SECONDS = 10;
+const SLOW_RATE = 0.65;
+const STEP_NAMES = ['Grabar', 'Imitar', 'Adivinar', 'Revelar'];
+
+const app = document.getElementById('app');
+const scoreEl = document.getElementById('score');
+
+const S = { screen: 'home', round: 1, speaker: 0, score: [0, 0], slow: false, note: '' };
+const clips = { a: null, b: null, f: null };
+const rec = { on: false, busy: false, target: null, mic: null, chunks: null, level: 0, t0: 0, raf: 0 };
+const play = { key: null, src: null, ctx: null, t0: 0, dur: 0, raf: 0 };
+
+try {
+  const saved = JSON.parse(localStorage.getItem('alreves.score'));
+  if (Array.isArray(saved) && saved.length === 2) S.score = saved.map(n => Number(n) || 0);
+} catch {}
+function saveScore() {
+  try { localStorage.setItem('alreves.score', JSON.stringify(S.score)); } catch {}
+}
+
+/* ---------- audio ---------- */
+
+const AC = window.AudioContext || window.webkitAudioContext;
+let playCtx = null;
+
+// iOS: "playback" sends sound to the loudspeaker and ignores the silent switch.
+function setSession(type) {
+  try { if (navigator.audioSession) navigator.audioSession.type = type; } catch {}
+}
+function getCtx() {
+  if (!playCtx) playCtx = new AC();
+  if (playCtx.state !== 'running') playCtx.resume().catch(() => {});
+  return playCtx;
+}
+// After the microphone has been used, iOS can leave an old context quiet or
+// routed to the earpiece, so playback always starts from a fresh one.
+function dropCtx() {
+  if (playCtx) { playCtx.close().catch(() => {}); playCtx = null; }
+}
+
+const CAPTURE_WORKLET = `
+class Cap extends AudioWorkletProcessor {
+  constructor() { super(); this.buf = new Float32Array(2048); this.n = 0; }
+  process(inputs) {
+    const ch = inputs[0] && inputs[0][0];
+    if (ch) for (let k = 0; k < ch.length; k++) {
+      this.buf[this.n++] = ch[k];
+      if (this.n === 2048) { this.port.postMessage(this.buf.slice(0)); this.n = 0; }
+    }
+    return true;
+  }
+}
+registerProcessor('cap', Cap);`;
+
+// Must be called from a tap: the context is created inside the gesture so iOS lets it run.
+async function openMic(onChunk) {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    throw Object.assign(new Error('no secure context'), { name: 'InsecureContext' });
+  }
+  const ctx = new AC();
+  ctx.resume().catch(() => {});
+  let stream;
+  try {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true }
+      });
+    } catch (e) {
+      if (e.name !== 'OverconstrainedError' && e.name !== 'TypeError') throw e;
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    }
+  } catch (e) {
+    ctx.close().catch(() => {});
+    throw e;
+  }
+  if (ctx.state !== 'running') { try { await ctx.resume(); } catch {} }
+
+  const src = ctx.createMediaStreamSource(stream);
+  const mute = ctx.createGain();
+  mute.gain.value = 0;
+  mute.connect(ctx.destination);
+  let node;
+  try {
+    if (!ctx.audioWorklet) throw new Error('no worklet');
+    const url = URL.createObjectURL(new Blob([CAPTURE_WORKLET], { type: 'application/javascript' }));
+    await ctx.audioWorklet.addModule(url);
+    URL.revokeObjectURL(url);
+    node = new AudioWorkletNode(ctx, 'cap');
+    node.port.onmessage = e => onChunk(e.data);
+  } catch {
+    node = ctx.createScriptProcessor(2048, 1, 1);
+    node.onaudioprocess = e => onChunk(new Float32Array(e.inputBuffer.getChannelData(0)));
+  }
+  src.connect(node);
+  node.connect(mute);
+
+  return {
+    rate: ctx.sampleRate,
+    close() {
+      if (node.port) node.port.onmessage = null; else node.onaudioprocess = null;
+      try { src.disconnect(); node.disconnect(); } catch {}
+      stream.getTracks().forEach(t => t.stop());
+      ctx.close().catch(() => {});
+    }
+  };
+}
+
+function peaksOf(samples, count = 64) {
+  const out = new Float32Array(count);
+  const size = samples.length / count;
+  let top = 0;
+  for (let i = 0; i < count; i++) {
+    let m = 0;
+    const end = Math.min(samples.length, Math.floor((i + 1) * size));
+    for (let k = Math.floor(i * size); k < end; k++) {
+      const a = Math.abs(samples[k]);
+      if (a > m) m = a;
+    }
+    out[i] = m;
+    if (m > top) top = m;
+  }
+  if (top > 0) for (let i = 0; i < count; i++) out[i] /= top;
+  return out;
+}
+
+function newBuffer(samples, rate) {
+  let buf;
+  try { buf = new AudioBuffer({ length: samples.length, sampleRate: rate, numberOfChannels: 1 }); }
+  catch { buf = getCtx().createBuffer(1, samples.length, rate); }
+  buf.getChannelData(0).set(samples);
+  return buf;
+}
+
+function makeClip(samples, rate) {
+  const reversed = new Float32Array(samples).reverse();
+  return {
+    fwd: newBuffer(samples, rate),
+    rev: newBuffer(reversed, rate),
+    dur: samples.length / rate,
+    peaks: { fwd: peaksOf(samples), rev: peaksOf(reversed) }
+  };
+}
+
+// Trims the silence around the voice (a reversed clip would otherwise start with
+// dead air), levels the volume and softens the edges so nothing clicks.
+function buildClip(chunks, rate) {
+  let total = 0;
+  for (const c of chunks) total += c.length;
+  const raw = new Float32Array(total);
+  let off = 0;
+  for (const c of chunks) { raw.set(c, off); off += c.length; }
+
+  // Drop the mic's opening pop and the thump of the tap that stops it.
+  const head = Math.floor(rate * 0.08), tail = Math.floor(rate * 0.06);
+  const x = total > head + tail + rate * 0.2 ? raw.subarray(head, total - tail) : raw;
+
+  const win = Math.max(1, Math.floor(rate * 0.01));
+  const frames = Math.floor(x.length / win);
+  if (frames < 15) return { error: 'short' };
+  const env = new Float32Array(frames);
+  let top = 0;
+  for (let i = 0; i < frames; i++) {
+    let sum = 0;
+    for (let k = i * win; k < (i + 1) * win; k++) sum += x[k] * x[k];
+    env[i] = Math.sqrt(sum / win);
+    if (env[i] > top) top = env[i];
+  }
+  if (top < 0.003) return { error: 'silent' };
+
+  const floor = Math.max(0.002, top * 0.03);
+  let first = 0, last = frames - 1;
+  while (first < frames && env[first] < floor) first++;
+  while (last > first && env[last] < floor) last--;
+  const pad = 12;
+  const from = Math.max(0, (first - pad) * win);
+  const to = Math.min(x.length, (last + 1 + pad) * win);
+  if (to - from < rate * 0.2) return { error: 'short' };
+
+  const y = x.slice(from, to);
+  let peak = 0;
+  for (let k = 0; k < y.length; k++) { const a = Math.abs(y[k]); if (a > peak) peak = a; }
+  const gain = Math.min(0.92 / peak, 20);
+  for (let k = 0; k < y.length; k++) y[k] *= gain;
+  const fade = Math.min(Math.floor(rate * 0.012), y.length >> 1);
+  for (let k = 0; k < fade; k++) { const t = k / fade; y[k] *= t; y[y.length - 1 - k] *= t; }
+  return makeClip(y, rate);
+}
+
+/* ---------- playback ---------- */
+
+function stopPlay() {
+  if (play.src) {
+    play.src.onended = null;
+    try { play.src.stop(); } catch {}
+  }
+  play.src = null;
+  play.key = null;
+  cancelAnimationFrame(play.raf);
+  paintTapes();
+}
+
+function startPlay(key) {
+  const [id, dir] = key.split('.');
+  const clip = clips[id];
+  if (!clip || rec.on || rec.busy) return;
+  const wasThis = play.key === key;
+  stopPlay();
+  if (wasThis) return;
+
+  setSession('playback');
+  const ctx = getCtx();
+  const rate = S.slow ? SLOW_RATE : 1;
+  const src = ctx.createBufferSource();
+  src.buffer = clip[dir];
+  src.playbackRate.value = rate;
+  src.connect(ctx.destination);
+  src.onended = () => { if (play.src === src) stopPlay(); };
+  src.start();
+  Object.assign(play, { key, src, ctx, t0: ctx.currentTime, dur: clip.dur / rate });
+  const tick = () => { paintTapes(); if (play.src) play.raf = requestAnimationFrame(tick); };
+  tick();
+}
+
+function paintTapes() {
+  for (const tape of app.querySelectorAll('.tape')) {
+    const key = tape.dataset.play;
+    const [id, dir] = key.split('.');
+    const clip = clips[id];
+    const cv = tape.querySelector('canvas');
+    const active = play.key === key;
+    tape.classList.toggle('is-playing', active);
+    tape.setAttribute('aria-pressed', String(active));
+    if (!clip || !cv) continue;
+
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (!w || !h) continue;
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    const g = cv.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    g.fillStyle = getComputedStyle(tape).color;
+
+    const peaks = clip.peaks[dir], n = peaks.length;
+    const step = w / n, bar = Math.max(2, step * 0.6);
+    const done = active ? Math.min(1, (play.ctx.currentTime - play.t0) / play.dur) : 0;
+    for (let i = 0; i < n; i++) {
+      const bh = Math.max(3, peaks[i] * h);
+      g.globalAlpha = !active ? 0.8 : (i + 0.5) / n <= done ? 1 : 0.28;
+      g.beginPath();
+      if (g.roundRect) g.roundRect(i * step + (step - bar) / 2, (h - bh) / 2, bar, bh, bar / 2);
+      else g.rect(i * step + (step - bar) / 2, (h - bh) / 2, bar, bh);
+      g.fill();
+    }
+  }
+}
+
+/* ---------- recording ---------- */
+
+function micError(e) {
+  if (e.name === 'InsecureContext') return 'Esta página necesita abrirse con una dirección que empiece por https.';
+  if (e.name === 'NotAllowedError' || e.name === 'SecurityError') {
+    return 'No tengo permiso para usar el micrófono. Toca «aA» o el icono de la barra de direcciones de Safari, entra en Ajustes del sitio web, permite el micrófono y vuelve a intentarlo.';
+  }
+  if (e.name === 'NotFoundError') return 'No encuentro ningún micrófono en este dispositivo.';
+  return 'No he podido usar el micrófono (' + (e.name || 'error') + '). Recarga la página y prueba otra vez.';
+}
+
+function paintRec() {
+  const btn = app.querySelector('.rec');
+  const label = app.querySelector('.rec-label');
+  if (!btn || !label) return;
+  btn.classList.toggle('is-on', rec.on);
+  btn.classList.toggle('is-busy', rec.busy);
+  btn.setAttribute('aria-label', rec.on ? 'Parar la grabación' : 'Empezar a grabar');
+  if (rec.busy) label.textContent = 'Preparando el micrófono…';
+  else if (!rec.on) label.textContent = 'Toca para grabar';
+}
+
+function recLoop() {
+  if (!rec.on) return;
+  const secs = (performance.now() - rec.t0) / 1000;
+  const btn = app.querySelector('.rec');
+  const label = app.querySelector('.rec-label');
+  if (btn) btn.style.setProperty('--lvl', Math.min(1, rec.level * 6).toFixed(3));
+  if (label) label.textContent = 'Grabando ' + secs.toFixed(1).replace('.', ',') + ' s · toca para parar';
+  if (secs >= MAX_SECONDS) return finishRec();
+  rec.raf = requestAnimationFrame(recLoop);
+}
+
+async function toggleRec() {
+  if (rec.busy) return;
+  if (rec.on) return finishRec();
+  const target = { rec1: 'a', imitate: 'b', free: 'f' }[S.screen];
+  if (!target) return;
+
+  stopPlay();
+  dropCtx();
+  S.note = '';
+  const note = app.querySelector('.notice');
+  if (note) note.remove();
+  rec.busy = true;
+  rec.target = target;
+  rec.level = 0;
+  paintRec();
+  setSession('play-and-record');
+
+  const chunks = [];
+  const screen = S.screen;
+  try {
+    const mic = await openMic(ch => {
+      chunks.push(ch);
+      let sum = 0;
+      for (let k = 0; k < ch.length; k += 8) sum += ch[k] * ch[k];
+      rec.level = Math.sqrt(sum / (ch.length / 8));
+    });
+    if (S.screen !== screen) { mic.close(); rec.busy = false; setSession('playback'); return; }
+    Object.assign(rec, { mic, chunks, on: true, busy: false, t0: performance.now() });
+    paintRec();
+    recLoop();
+  } catch (e) {
+    rec.busy = false;
+    rec.on = false;
+    setSession('playback');
+    S.note = micError(e);
+    render();
+  }
+}
+
+function finishRec() {
+  if (!rec.on) return;
+  const { mic, chunks, target } = rec;
+  rec.on = false;
+  cancelAnimationFrame(rec.raf);
+  mic.close();
+  rec.mic = null;
+  setSession('playback');
+
+  const clip = buildClip(chunks, mic.rate);
+  if (clip.error === 'silent') {
+    S.note = 'No se ha oído nada. Acerca el móvil a la boca y comprueba que el micrófono tiene permiso.';
+  } else if (clip.error) {
+    S.note = 'Ha sido demasiado corto. Mantén la grabación hasta terminar la palabra.';
+  } else {
+    clips[target] = clip;
+    S.note = '';
+  }
+  render();
+}
+
+function abortRec() {
+  if (rec.on && rec.mic) rec.mic.close();
+  cancelAnimationFrame(rec.raf);
+  Object.assign(rec, { on: false, mic: null, chunks: null });
+  setSession('playback');
+}
+
+/* ---------- screens ---------- */
+
+const who = i => 'Jugador ' + (i + 1);
+const secs = d => d.toFixed(1).replace('.', ',') + ' s';
+
+const steps = now => '<ol class="steps" aria-hidden="true">' +
+  STEP_NAMES.map((_, i) => `<li class="${i <= now ? 'is-on' : ''}"></li>`).join('') + '</ol>' +
+  `<p class="eyebrow">Ronda ${S.round} · Paso ${now + 1} de 4 · ${STEP_NAMES[now]}</p>`;
+
+const tape = (key, name) => {
+  const [id, dir] = key.split('.');
+  return `<button class="tape ${dir === 'rev' ? 'is-rev' : ''}" data-play="${key}" aria-pressed="false">
+    <span class="tape-key"></span>
+    <span><span class="tape-name"><span>${name}</span><small>${secs(clips[id].dur)}</small></span><canvas></canvas></span>
+  </button>`;
+};
+
+const recZone = () => `<div class="rec-zone">
+  <button class="rec" data-act="rec" aria-label="Empezar a grabar"><i></i></button>
+  <p class="rec-label" aria-live="polite">Toca para grabar</p>
+</div>`;
+
+const slowChip = () => `<label class="chip"><input type="checkbox" id="slow" ${S.slow ? 'checked' : ''}> Más lento</label>`;
+const notice = () => S.note ? `<p class="notice" role="alert">${S.note}</p>` : '';
+
+const screens = {
+  home() {
+    const played = S.score[0] + S.score[1] > 0;
+    return `
+      <h1 class="hero" aria-label="Al revés"><span>AL</span><span class="mirror">REVÉS</span></h1>
+      <ol class="how">
+        <li>Una persona graba una palabra sin que la otra la oiga.</li>
+        <li>La otra la escucha al revés y graba lo que oye, tal cual suena.</li>
+        <li>La app le da la vuelta a esa imitación. ¿Adivina la palabra?</li>
+      </ol>
+      ${played ? '<button class="link" data-act="reset">Poner el marcador a cero</button>' : ''}
+      <div class="actions">
+        <button class="btn btn--main" data-act="start">Jugar</button>
+        <button class="btn" data-act="free">Modo libre</button>
+      </div>`;
+  },
+  rec1() {
+    return `
+      <div class="head">${steps(0)}
+        <h1>${who(S.speaker)}, graba tu palabra</h1>
+        <p class="hint">Que ${who(1 - S.speaker)} no te oiga. Una palabra o una frase corta es lo que mejor funciona.</p>
+      </div>
+      ${notice()}
+      ${clips.a ? `<div class="tapes">${tape('a.fwd', 'Tu grabación')}</div>
+        <button class="link" data-act="redo">Grabar otra vez</button>
+        <div class="actions"><button class="btn btn--main" data-act="pass">Listo, pasar el móvil</button></div>`
+      : recZone()}`;
+  },
+  pass() {
+    return `
+      <div class="head">
+        <p class="eyebrow">Ronda ${S.round} · Cambio de manos</p>
+        <h1>Pásale el móvil a ${who(1 - S.speaker)}</h1>
+        <p class="hint">${who(S.speaker)}: ni una pista. Al tocar el botón sonará tu palabra al revés.</p>
+      </div>
+      <div class="actions"><button class="btn btn--main" data-act="listen">Soy ${who(1 - S.speaker)}, a escuchar</button></div>`;
+  },
+  imitate() {
+    return `
+      <div class="head">${steps(1)}
+        <h1>${who(1 - S.speaker)}, imita lo que oyes</h1>
+        <p class="hint">Escúchala las veces que quieras. Luego graba esos mismos sonidos, aunque no signifiquen nada.</p>
+      </div>
+      <div class="tapes">${tape('a.rev', 'La palabra, al revés')}</div>
+      ${slowChip()}
+      ${notice()}
+      ${clips.b ? `<div class="tapes">${tape('b.fwd', 'Tu imitación')}</div>
+        <button class="link" data-act="redo">Grabar otra vez</button>
+        <div class="actions"><button class="btn btn--main" data-act="flip">Darle la vuelta</button></div>`
+      : recZone()}`;
+  },
+  guess() {
+    return `
+      <div class="head">${steps(2)}
+        <h1>¿Qué palabra era?</h1>
+        <p class="hint">Esto es tu imitación puesta al revés. Di en voz alta qué crees que grabó ${who(S.speaker)}.</p>
+      </div>
+      <div class="tapes">${tape('b.rev', 'Tu imitación, al revés')}</div>
+      ${slowChip()}
+      <div class="actions"><button class="btn btn--main" data-act="reveal">Revelar la palabra</button></div>`;
+  },
+  reveal() {
+    return `
+      <div class="head">${steps(3)}
+        <h1>La palabra era…</h1>
+      </div>
+      <div class="group">
+        <p class="eyebrow">${who(S.speaker)}</p>
+        ${tape('a.fwd', 'Original')}
+        ${tape('a.rev', 'Original, al revés')}
+      </div>
+      <div class="group">
+        <p class="eyebrow">${who(1 - S.speaker)}</p>
+        ${tape('b.fwd', 'Imitación')}
+        ${tape('b.rev', 'Imitación, al revés')}
+      </div>
+      <div class="actions">
+        <p class="eyebrow">¿Ha acertado ${who(1 - S.speaker)}? Después se cambian los papeles.</p>
+        <div class="pair">
+          <button class="btn btn--main" data-act="hit">Sí, +1 punto</button>
+          <button class="btn" data-act="miss">No</button>
+        </div>
+      </div>`;
+  },
+  free() {
+    return `
+      <div class="head">
+        <p class="eyebrow">Modo libre</p>
+        <h1>Graba y dale la vuelta</h1>
+        ${clips.f ? '' : '<p class="hint">Graba lo que quieras y escúchalo normal o al revés.</p>'}
+      </div>
+      ${notice()}
+      ${clips.f ? `<div class="tapes">${tape('f.fwd', 'Normal')}${tape('f.rev', 'Al revés')}</div>
+        ${slowChip()}
+        <div class="actions"><button class="btn btn--main" data-act="redo">Grabar otra</button></div>`
+      : recZone()}`;
+  }
+};
+
+function render() {
+  app.innerHTML = screens[S.screen]();
+  app.scrollTop = 0;
+  scoreEl.innerHTML = `<span>J1</span><b>${S.score[0]}</b><b>${S.score[1]}</b><span>J2</span>`;
+  paintRec();
+  paintTapes();
+}
+
+function go(screen) {
+  abortRec();
+  stopPlay();
+  S.note = '';
+  S.screen = screen;
+  render();
+}
+
+function nextRound(point) {
+  if (point) { S.score[1 - S.speaker]++; saveScore(); }
+  S.round++;
+  S.speaker = 1 - S.speaker;
+  clips.a = clips.b = null;
+  go('rec1');
+}
+
+const actions = {
+  home: () => go('home'),
+  start: () => { clips.a = clips.b = null; go('rec1'); },
+  free: () => { clips.f = null; go('free'); },
+  reset: () => { S.score = [0, 0]; S.round = 1; S.speaker = 0; saveScore(); render(); },
+  rec: () => toggleRec(),
+  redo: () => {
+    const target = { rec1: 'a', imitate: 'b', free: 'f' }[S.screen];
+    stopPlay();
+    clips[target] = null;
+    render();
+  },
+  pass: () => go('pass'),
+  listen: () => { go('imitate'); startPlay('a.rev'); },
+  flip: () => { go('guess'); startPlay('b.rev'); },
+  reveal: () => { go('reveal'); startPlay('a.fwd'); },
+  hit: () => nextRound(true),
+  miss: () => nextRound(false)
+};
+
+document.addEventListener('click', e => {
+  const playBtn = e.target.closest('[data-play]');
+  if (playBtn) return startPlay(playBtn.dataset.play);
+  const actBtn = e.target.closest('[data-act]');
+  if (actBtn && actions[actBtn.dataset.act]) actions[actBtn.dataset.act]();
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'slow') { S.slow = e.target.checked; stopPlay(); }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { if (rec.on) finishRec(); else stopPlay(); }
+});
+window.addEventListener('resize', paintTapes);
+
+render();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(paintTapes);
+
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
