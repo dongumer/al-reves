@@ -1,5 +1,5 @@
 // Keeps the game working without a connection once it has been opened one time.
-const CACHE = 'alreves-v1';
+const CACHE = 'alreves-v2';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

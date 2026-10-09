@@ -223,6 +223,35 @@ h1 {
   text-underline-offset: 3px;
 }
 
+/* ---- themes ---- */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.theme-chip {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  font-weight: 700;
+  font-size: 15px;
+}
+.theme-chip[aria-pressed="true"] { background: var(--ink); color: var(--ground); }
+.suggest {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  background: var(--paper);
+}
+.suggest-word {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(28px, 8vw, 36px);
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.suggest .link { justify-self: start; }
+
 /* ---- record key ---- */
 .rec-zone {
   margin-block: auto;
@@ -361,7 +390,19 @@ const STEP_NAMES = ['Grabar', 'Imitar', 'Adivinar', 'Revelar'];
 const app = document.getElementById('app');
 const scoreEl = document.getElementById('score');
 
-const S = { screen: 'home', round: 1, speaker: 0, score: [0, 0], slow: false, note: '' };
+// Temáticas para el botón "Dame una palabra". Las palabras van dentro de la app: funcionan sin conexión y sin coste.
+const THEMES = [
+  { id: 'libre', label: 'Libre', words: [] },
+  { id: 'animales', label: 'Animales', words: ['perro', 'gato', 'elefante', 'serpiente', 'pingüino', 'caballo', 'mariposa', 'tiburón', 'cocodrilo', 'vaca', 'gallina', 'delfín', 'ratón', 'búho', 'jirafa', 'oso', 'rana', 'conejo', 'lobo', 'pulpo', 'hormiga', 'tortuga', 'león', 'canguro'] },
+  { id: 'comida', label: 'Comida', words: ['paella', 'tortilla', 'chocolate', 'pizza', 'churros', 'limón', 'tomate', 'lentejas', 'bocadillo', 'helado', 'queso', 'sandía', 'aceituna', 'cebolla', 'plátano', 'galleta', 'sopa', 'caramelo', 'cacahuete', 'pimiento', 'flan', 'espárrago'] },
+  { id: 'casa', label: 'Casa', words: ['puerta', 'ventana', 'cocina', 'cuchara', 'escoba', 'almohada', 'lámpara', 'espejo', 'cajón', 'grifo', 'sofá', 'nevera', 'cafetera', 'cortina', 'bañera', 'armario', 'tijeras', 'enchufe', 'alfombra', 'sartén', 'cepillo', 'reloj', 'timbre', 'colchón'] },
+  { id: 'deportes', label: 'Deportes', words: ['fútbol', 'baloncesto', 'tenis', 'natación', 'portería', 'balón', 'penalti', 'gol', 'raqueta', 'esquí', 'ciclismo', 'maratón', 'boxeo', 'árbitro', 'canasta', 'surf', 'gimnasia', 'remo', 'esgrima', 'pelota'] },
+  { id: 'lugares', label: 'Lugares', words: ['playa', 'montaña', 'aeropuerto', 'biblioteca', 'hospital', 'mercado', 'castillo', 'estación', 'piscina', 'selva', 'desierto', 'museo', 'jardín', 'puerto', 'granja', 'colegio', 'cine', 'volcán', 'iglesia', 'farmacia', 'pueblo', 'bosque'] },
+  { id: 'oficios', label: 'Oficios', words: ['bombero', 'panadero', 'médico', 'pintor', 'carpintero', 'profesor', 'pescador', 'cartero', 'fontanero', 'peluquero', 'electricista', 'cocinero', 'jardinero', 'astronauta', 'piloto', 'veterinario', 'músico', 'camarero', 'policía', 'mecánico'] }
+];
+const themeOf = id => THEMES.find(t => t.id === id) || THEMES[0];
+
+const S = { screen: 'home', round: 1, speaker: 0, score: [0, 0], slow: false, note: '', theme: 'libre', suggest: null };
 const clips = { a: null, b: null, f: null };
 const rec = { on: false, busy: false, target: null, mic: null, chunks: null, level: 0, t0: 0, raf: 0 };
 const play = { key: null, src: null, ctx: null, t0: 0, dur: 0, raf: 0 };
@@ -372,6 +413,13 @@ try {
 } catch {}
 function saveScore() {
   try { localStorage.setItem('alreves.score', JSON.stringify(S.score)); } catch {}
+}
+try {
+  const t = localStorage.getItem('alreves.theme');
+  if (t && themeOf(t).id === t) S.theme = t;
+} catch {}
+function saveTheme() {
+  try { localStorage.setItem('alreves.theme', S.theme); } catch {}
 }
 
 /* ---------- audio ---------- */
@@ -736,6 +784,33 @@ const recZone = () => `<div class="rec-zone">
 const slowChip = () => `<label class="chip"><input type="checkbox" id="slow" ${S.slow ? 'checked' : ''}> Más lento</label>`;
 const notice = () => S.note ? `<p class="notice" role="alert">${S.note}</p>` : '';
 
+const themeChips = () => `<div class="group">
+  <p class="eyebrow">Temática</p>
+  <div class="chips">${THEMES.map(t =>
+    `<button class="theme-chip" data-act="theme" data-theme="${t.id}" aria-pressed="${S.theme === t.id}">${t.label}</button>`
+  ).join('')}</div>
+</div>`;
+
+// Solo se muestra si hay temática. Sugiere una palabra distinta a la anterior.
+const suggestBox = () => {
+  const t = themeOf(S.theme);
+  if (t.id === 'libre') return '';
+  return S.suggest
+    ? `<div class="suggest">
+        <p class="eyebrow">Palabra sugerida · ${t.label}</p>
+        <p class="suggest-word">${S.suggest}</p>
+        <button class="link" data-act="suggest">Otra palabra</button>
+      </div>`
+    : `<button class="btn" data-act="suggest">Dame una palabra</button>`;
+};
+
+function pickWord() {
+  const list = themeOf(S.theme).words;
+  let w;
+  do { w = list[Math.floor(Math.random() * list.length)]; } while (list.length > 1 && w === S.suggest);
+  return w;
+}
+
 const screens = {
   home() {
     const played = S.score[0] + S.score[1] > 0;
@@ -746,6 +821,7 @@ const screens = {
         <li>La otra la escucha al revés y graba lo que oye, tal cual suena.</li>
         <li>La app le da la vuelta a esa imitación. ¿Adivina la palabra?</li>
       </ol>
+      ${themeChips()}
       ${played ? '<button class="link" data-act="reset">Poner el marcador a cero</button>' : ''}
       <div class="actions">
         <button class="btn btn--main" data-act="start">Jugar</button>
@@ -759,6 +835,7 @@ const screens = {
         <p class="hint">Que ${who(1 - S.speaker)} no te oiga. Una palabra o una frase corta es lo que mejor funciona.</p>
       </div>
       ${notice()}
+      ${clips.a ? '' : suggestBox()}
       ${clips.a ? `<div class="tapes">${tape('a.fwd', 'Tu grabación')}</div>
         <button class="link" data-act="redo">Grabar otra vez</button>
         <div class="actions"><button class="btn btn--main" data-act="pass">Listo, pasar el móvil</button></div>`
@@ -861,7 +938,9 @@ function nextRound(point) {
 
 const actions = {
   home: () => go('home'),
-  start: () => { clips.a = clips.b = null; go('rec1'); },
+  start: () => { clips.a = clips.b = null; S.suggest = null; go('rec1'); },
+  theme: el => { S.theme = el.dataset.theme; S.suggest = null; saveTheme(); render(); },
+  suggest: () => { S.suggest = pickWord(); render(); },
   free: () => { clips.f = null; go('free'); },
   reset: () => { S.score = [0, 0]; S.round = 1; S.speaker = 0; saveScore(); render(); },
   rec: () => toggleRec(),
@@ -883,7 +962,7 @@ document.addEventListener('click', e => {
   const playBtn = e.target.closest('[data-play]');
   if (playBtn) return startPlay(playBtn.dataset.play);
   const actBtn = e.target.closest('[data-act]');
-  if (actBtn && actions[actBtn.dataset.act]) actions[actBtn.dataset.act]();
+  if (actBtn && actions[actBtn.dataset.act]) actions[actBtn.dataset.act](actBtn);
 });
 document.addEventListener('change', e => {
   if (e.target.id === 'slow') { S.slow = e.target.checked; stopPlay(); }
