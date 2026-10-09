@@ -224,17 +224,7 @@ h1 {
 }
 
 /* ---- themes ---- */
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.theme-chip {
-  min-height: 44px;
-  padding: 8px 16px;
-  border: 2px solid var(--ink);
-  border-radius: 999px;
-  background: var(--paper);
-  font-weight: 700;
-  font-size: 15px;
-}
-.theme-chip[aria-pressed="true"] { background: var(--ink); color: var(--ground); }
+.theme-list { display: grid; gap: 14px; }
 .suggest {
   display: grid;
   gap: 6px;
@@ -393,12 +383,12 @@ const scoreEl = document.getElementById('score');
 // Temáticas para el botón "Dame una palabra". Las palabras van dentro de la app: funcionan sin conexión y sin coste.
 const THEMES = [
   { id: 'libre', label: 'Libre', words: [] },
-  { id: 'animales', label: 'Animales', words: ['perro', 'gato', 'elefante', 'serpiente', 'pingüino', 'caballo', 'mariposa', 'tiburón', 'cocodrilo', 'vaca', 'gallina', 'delfín', 'ratón', 'búho', 'jirafa', 'oso', 'rana', 'conejo', 'lobo', 'pulpo', 'hormiga', 'tortuga', 'león', 'canguro'] },
-  { id: 'comida', label: 'Comida', words: ['paella', 'tortilla', 'chocolate', 'pizza', 'churros', 'limón', 'tomate', 'lentejas', 'bocadillo', 'helado', 'queso', 'sandía', 'aceituna', 'cebolla', 'plátano', 'galleta', 'sopa', 'caramelo', 'cacahuete', 'pimiento', 'flan', 'espárrago'] },
-  { id: 'casa', label: 'Casa', words: ['puerta', 'ventana', 'cocina', 'cuchara', 'escoba', 'almohada', 'lámpara', 'espejo', 'cajón', 'grifo', 'sofá', 'nevera', 'cafetera', 'cortina', 'bañera', 'armario', 'tijeras', 'enchufe', 'alfombra', 'sartén', 'cepillo', 'reloj', 'timbre', 'colchón'] },
-  { id: 'deportes', label: 'Deportes', words: ['fútbol', 'baloncesto', 'tenis', 'natación', 'portería', 'balón', 'penalti', 'gol', 'raqueta', 'esquí', 'ciclismo', 'maratón', 'boxeo', 'árbitro', 'canasta', 'surf', 'gimnasia', 'remo', 'esgrima', 'pelota'] },
-  { id: 'lugares', label: 'Lugares', words: ['playa', 'montaña', 'aeropuerto', 'biblioteca', 'hospital', 'mercado', 'castillo', 'estación', 'piscina', 'selva', 'desierto', 'museo', 'jardín', 'puerto', 'granja', 'colegio', 'cine', 'volcán', 'iglesia', 'farmacia', 'pueblo', 'bosque'] },
-  { id: 'oficios', label: 'Oficios', words: ['bombero', 'panadero', 'médico', 'pintor', 'carpintero', 'profesor', 'pescador', 'cartero', 'fontanero', 'peluquero', 'electricista', 'cocinero', 'jardinero', 'astronauta', 'piloto', 'veterinario', 'músico', 'camarero', 'policía', 'mecánico'] }
+  { id: 'animales', label: 'Animales', words: ['perro', 'gato', 'elefante', 'serpiente', 'pingüino', 'caballo', 'mariposa', 'tiburón', 'cocodrilo', 'vaca', 'gallina', 'delfín', 'ratón', 'búho', 'jirafa', 'oso', 'rana', 'conejo', 'lobo', 'pulpo', 'hormiga', 'tortuga', 'león', 'canguro', 'cerdo', 'pato', 'oveja', 'cabra', 'burro', 'ballena', 'águila', 'avestruz', 'camello', 'koala', 'foca', 'medusa', 'murciélago', 'zorro', 'ardilla', 'erizo', 'mono', 'cangrejo', 'gusano', 'caracol', 'abeja', 'escarabajo', 'pez', 'toro', 'gorila', 'hipopótamo'] },
+  { id: 'comida', label: 'Comida', words: ['paella', 'tortilla', 'chocolate', 'pizza', 'churros', 'limón', 'tomate', 'lentejas', 'bocadillo', 'helado', 'queso', 'sandía', 'aceituna', 'cebolla', 'plátano', 'galleta', 'sopa', 'caramelo', 'cacahuete', 'pimiento', 'flan', 'espárrago', 'melocotón', 'fresa', 'uva', 'naranja', 'manzana', 'pera', 'zanahoria', 'lechuga', 'patata', 'judía', 'garbanzo', 'arroz', 'pasta', 'huevo', 'jamón', 'chorizo', 'salchicha', 'hamburguesa', 'mantequilla', 'yogur', 'tarta', 'bizcocho', 'croqueta', 'empanada', 'gamba', 'mejillón', 'calamar', 'miel'] },
+  { id: 'casa', label: 'Casa', words: ['puerta', 'ventana', 'cocina', 'cuchara', 'escoba', 'almohada', 'lámpara', 'espejo', 'cajón', 'grifo', 'sofá', 'nevera', 'cafetera', 'cortina', 'bañera', 'armario', 'tijeras', 'enchufe', 'alfombra', 'sartén', 'cepillo', 'reloj', 'timbre', 'colchón', 'mesa', 'silla', 'tenedor', 'cuchillo', 'plato', 'vaso', 'taza', 'olla', 'batidora', 'lavadora', 'aspiradora', 'microondas', 'horno', 'fregadero', 'ducha', 'lavabo', 'pasillo', 'escalera', 'buzón', 'felpudo', 'persiana', 'balcón', 'bombilla', 'llave', 'cerradura', 'estantería'] },
+  { id: 'deportes', label: 'Deportes', words: ['fútbol', 'baloncesto', 'tenis', 'natación', 'portería', 'balón', 'penalti', 'gol', 'raqueta', 'esquí', 'ciclismo', 'maratón', 'boxeo', 'árbitro', 'canasta', 'surf', 'gimnasia', 'remo', 'esgrima', 'pelota', 'voleibol', 'hockey', 'golf', 'rugby', 'atletismo', 'judo', 'kárate', 'waterpolo', 'piragüismo', 'patinaje', 'bádminton', 'arco', 'dardos', 'billar', 'petanca', 'ajedrez', 'bolos', 'entrenador', 'medalla', 'trofeo', 'podio', 'campeón', 'final', 'liga', 'estadio', 'grada', 'hinchada', 'salto', 'carrera', 'jabalina'] },
+  { id: 'lugares', label: 'Lugares', words: ['playa', 'montaña', 'aeropuerto', 'biblioteca', 'hospital', 'mercado', 'castillo', 'estación', 'piscina', 'selva', 'desierto', 'museo', 'jardín', 'puerto', 'granja', 'colegio', 'cine', 'volcán', 'iglesia', 'farmacia', 'pueblo', 'bosque', 'ciudad', 'banco', 'gasolinera', 'restaurante', 'hotel', 'teatro', 'parque', 'plaza', 'calle', 'pirámide', 'cueva', 'isla', 'lago', 'río', 'cascada', 'faro', 'universidad', 'ayuntamiento', 'supermercado', 'zoo', 'cafetería', 'oficina', 'fábrica', 'mina', 'muelle', 'glaciar', 'acantilado', 'catedral'] },
+  { id: 'oficios', label: 'Oficios', words: ['bombero', 'panadero', 'médico', 'pintor', 'carpintero', 'profesor', 'pescador', 'cartero', 'fontanero', 'peluquero', 'electricista', 'cocinero', 'jardinero', 'astronauta', 'piloto', 'veterinario', 'músico', 'camarero', 'policía', 'mecánico', 'albañil', 'abogado', 'juez', 'enfermera', 'dentista', 'farmacéutico', 'arquitecto', 'ingeniero', 'programador', 'periodista', 'escritor', 'actor', 'cantante', 'bailarín', 'pastor', 'granjero', 'minero', 'soldado', 'marinero', 'capitán', 'conductor', 'taxista', 'repartidor', 'barbero', 'sastre', 'zapatero', 'relojero', 'joyero', 'cerrajero', 'detective'] }
 ];
 const themeOf = id => THEMES.find(t => t.id === id) || THEMES[0];
 
@@ -413,13 +403,6 @@ try {
 } catch {}
 function saveScore() {
   try { localStorage.setItem('alreves.score', JSON.stringify(S.score)); } catch {}
-}
-try {
-  const t = localStorage.getItem('alreves.theme');
-  if (t && themeOf(t).id === t) S.theme = t;
-} catch {}
-function saveTheme() {
-  try { localStorage.setItem('alreves.theme', S.theme); } catch {}
 }
 
 /* ---------- audio ---------- */
@@ -784,13 +767,6 @@ const recZone = () => `<div class="rec-zone">
 const slowChip = () => `<label class="chip"><input type="checkbox" id="slow" ${S.slow ? 'checked' : ''}> Más lento</label>`;
 const notice = () => S.note ? `<p class="notice" role="alert">${S.note}</p>` : '';
 
-const themeChips = () => `<div class="group">
-  <p class="eyebrow">Temática</p>
-  <div class="chips">${THEMES.map(t =>
-    `<button class="theme-chip" data-act="theme" data-theme="${t.id}" aria-pressed="${S.theme === t.id}">${t.label}</button>`
-  ).join('')}</div>
-</div>`;
-
 // Solo se muestra si hay temática. Sugiere una palabra distinta a la anterior.
 const suggestBox = () => {
   const t = themeOf(S.theme);
@@ -821,12 +797,24 @@ const screens = {
         <li>La otra la escucha al revés y graba lo que oye, tal cual suena.</li>
         <li>La app le da la vuelta a esa imitación. ¿Adivina la palabra?</li>
       </ol>
-      ${themeChips()}
       ${played ? '<button class="link" data-act="reset">Poner el marcador a cero</button>' : ''}
       <div class="actions">
-        <button class="btn btn--main" data-act="start">Jugar</button>
+        <button class="btn btn--main" data-act="start">Jugar libre</button>
+        <button class="btn" data-act="pick">Jugar con temática</button>
         <button class="btn" data-act="free">Modo libre</button>
       </div>`;
+  },
+  theme() {
+    return `
+      <div class="head">
+        <p class="eyebrow">Jugar con temática</p>
+        <h1>¿De qué va la palabra?</h1>
+        <p class="hint">Dentro de la partida tendrás un botón para que te dé una palabra si no se te ocurre ninguna.</p>
+      </div>
+      <div class="theme-list">${THEMES.filter(t => t.id !== 'libre').map(t =>
+        `<button class="btn" data-act="pickTheme" data-theme="${t.id}">${t.label}</button>`
+      ).join('')}</div>
+      <div class="actions"><button class="link" data-act="home">Volver</button></div>`;
   },
   rec1() {
     return `
@@ -938,8 +926,9 @@ function nextRound(point) {
 
 const actions = {
   home: () => go('home'),
-  start: () => { clips.a = clips.b = null; S.suggest = null; go('rec1'); },
-  theme: el => { S.theme = el.dataset.theme; S.suggest = null; saveTheme(); render(); },
+  start: () => { S.theme = 'libre'; clips.a = clips.b = null; S.suggest = null; go('rec1'); },
+  pick: () => go('theme'),
+  pickTheme: el => { S.theme = el.dataset.theme; clips.a = clips.b = null; S.suggest = null; go('rec1'); },
   suggest: () => { S.suggest = pickWord(); render(); },
   free: () => { clips.f = null; go('free'); },
   reset: () => { S.score = [0, 0]; S.round = 1; S.speaker = 0; saveScore(); render(); },
